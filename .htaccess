@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Kalau akses file/folder yg memang ada selain public, tetap load
+    RewriteCond %{REQUEST_URI} !^/public
+
+    # Redirect semua request ke folder public
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
