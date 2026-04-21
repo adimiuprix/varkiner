@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\TradeHistory;
 use App\Models\Trade;
 use Illuminate\Http\Request;
+use App\Services\BitgetService;
 
 class TradeOrderController extends Controller
 {
-    public function openTradeOrder(Request $request)
+    public function openTradeOrder(Request $request, BitgetService $service)
     {
         // Validasi input
         $request->validate([
@@ -37,14 +38,33 @@ class TradeOrderController extends Controller
         }
         
         // Buka trade baru
-        $tradeExecute = "potjkeotkoetjkoteotgeototmkj";
+        // $tradeExecute = $service->createFuturesOrder([
+        //     'symbol'      => $request->symbol,
+        //     'productType' => 'USDT-FUTURES',
+        //     'marginMode'  => 'isolated',
+        //     'side'        => $request->type,
+        //     'orderType'   => 'market',
+        //     'size'        => '0.01',
+        //     'marginCoin'  => 'USDT'
+        // ]);
+
+        $tradeExecute = [
+            "code" => "0",
+            "msg" => "success",
+            "data" => [
+                "successList" => [
+                    "clientOid" => "9eyj4985tjgotjeot",
+                ],
+                "failedList" => []
+            ]
+        ];
 
         Trade::create([
             'symbol' => $request->symbol,
             'type'   => $request->type,
             'price'  => $request->current_price,
             'status' => 'open',
-            'txid'   => $tradeExecute,
+            'txid'   => $tradeExecute['data']['successList']['clientOid'],
         ]);
 
         // Simpan history baru

@@ -8,14 +8,14 @@ class BitgetService
 {
     protected string $baseUrl = 'https://api.bitget.com';
     protected string $apiKey;
-    protected string $apiSecret;
+    protected string $secretKey;
     protected string $passphrase;
 
     public function __construct()
     {
-        $this->apiKey = config('services.bitget.key');
-        $this->apiSecret = config('services.bitget.secret');
-        $this->passphrase = config('services.bitget.passphrase');
+        $this->apiKey = "bg_523cc6034001f552e851cfb7986a0937";
+        $this->secretKey = "e25da0e7123f6430a4402e43bd541b26674e3f951a4053707dee85305279acbe";
+        $this->passphrase = "MakanBiawak";
     }
 
     protected function signature(string $method, string $path, string $query = '', array $body = []): array
@@ -23,7 +23,7 @@ class BitgetService
         $timestamp = (int) (microtime(true) * 1000);
         $preHash = $timestamp . strtoupper($method) . $path . ($query ? "?$query" : '') . ($body ? json_encode($body, JSON_UNESCAPED_SLASHES) : '');
 
-        return [$timestamp, base64_encode(hash_hmac('sha256', $preHash, $this->apiSecret, true))];
+        return [$timestamp, base64_encode(hash_hmac('sha256', $preHash, $this->secretKey, true))];
     }
 
     public function request(string $method, string $path, array $params = [])
