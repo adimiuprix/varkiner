@@ -14,4 +14,18 @@ class TradeHistory extends Model
         'zone_top',
         'order_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'current_price' => 'decimal:8',
+            'zone_bottom' => 'decimal:8',
+            'zone_top' => 'decimal:8',
+        ];
+    }
+
+    public function scopeForSymbol($query, string $symbol)
+    {
+        return $query->where('symbol', $symbol);
+    }
 }

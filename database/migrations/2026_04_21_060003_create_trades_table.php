@@ -15,9 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('symbol');
             $table->string('type');
-            $table->decimal('price', 10, 2);
+            $table->decimal('price', 20, 8);
+            $table->decimal('close_price', 20, 8)->nullable();
             $table->enum('status', ['open', 'closed'])->default('open');
+            $table->string('txid')->nullable();
             $table->timestamps();
+
+            $table->index(['symbol', 'status']);
         });
     }
 
