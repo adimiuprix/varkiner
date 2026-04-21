@@ -4,14 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class TradeHistory extends Model
+class Trade extends Model
 {
     protected $fillable = [
         'symbol',
         'type',
-        'current_price',
-        'zone_bottom',
-        'zone_top',
-        'order_id',
+        'price',
+        'status',
+        'txid',
     ];
 }
