@@ -81,4 +81,21 @@ class TradeOrderController extends Controller
             'message' => 'Trade updated and new order opened successfully',
         ], 201);
     }
+
+    public function testOrder(BitgetService $service){
+        if (request()->isMethod('post')) {
+            $tradeExecute = $service->createFuturesOrder([
+                'symbol'      => 'BTCUSDT',
+                'productType' => 'USDT-FUTURES',
+                'marginMode'  => 'isolated',
+                'side'        => 'buy',
+                'orderType'   => 'market',
+                'size'        => '0.01',
+                'marginCoin'  => 'USDT'
+            ]);
+            return response()->json($tradeExecute);
+        } else {
+            return view('home');
+        }
+    }
 }
