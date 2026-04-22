@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TradeHistory;
 use App\Models\Trade;
-use Illuminate\Http\Request;
+use App\Models\TradeHistory;
 use App\Services\BitgetService;
+use Illuminate\Http\Request;
 
 class TradeOrderController extends Controller
 {
@@ -26,7 +26,7 @@ class TradeOrderController extends Controller
         // Jika tipe sama dengan history terakhir, jangan eksekusi apa pun
         if ($lastHistory && $lastHistory->type === $request->type) {
             return response()->json([
-                'message' => 'Trade type is same as last history, nothing executed'
+                'message' => 'Trade type is same as last history, nothing executed',
             ]);
         }
 
@@ -36,45 +36,26 @@ class TradeOrderController extends Controller
                 ->where('status', 'open')
                 ->update(['status' => 'closed']);
         }
-        
-        // Buka trade baru
-        // $tradeExecute = $service->createFuturesOrder([
-        //     'symbol'      => $request->symbol,
-        //     'productType' => 'USDT-FUTURES',
-        //     'marginMode'  => 'isolated',
-        //     'side'        => $request->type,
-        //     'orderType'   => 'market',
-        //     'size'        => '0.01',
-        //     'marginCoin'  => 'USDT'
-        // ]);
 
-        $tradeExecute = [
-            "code" => "0",
-            "msg" => "success",
-            "data" => [
-                "successList" => [
-                    "clientOid" => "9eyj4985tjgotjeot",
-                ],
-                "failedList" => []
-            ]
-        ];
+        // Buka trade baru
+        $tradeExecute = $this->futuresOrder($service);
 
         Trade::create([
             'symbol' => $request->symbol,
-            'type'   => $request->type,
-            'price'  => $request->current_price,
+            'type' => $request->type,
+            'price' => $request->current_price,
             'status' => 'open',
-            'txid'   => $tradeExecute['data']['successList']['clientOid'],
+            'txid' => $tradeExecute['data']['successList']['clientOid'],
         ]);
 
         // Simpan history baru
         TradeHistory::create([
-            'symbol'        => $request->symbol,
-            'type'          => $request->type,
+            'symbol' => $request->symbol,
+            'type' => $request->type,
             'current_price' => $request->current_price,
-            'zone_bottom'   => $request->zone['bottom'],
-            'zone_top'      => $request->zone['top'],
-            'order_id'      => $tradeExecute,
+            'zone_bottom' => $request->zone['bottom'],
+            'zone_top' => $request->zone['top'],
+            'order_id' => $tradeExecute,
         ]);
 
         return response()->json([
@@ -82,18 +63,35 @@ class TradeOrderController extends Controller
         ], 201);
     }
 
-    public function testOrder(BitgetService $service){
+    public function futuresOrder(BitgetService $service)
+    {
         if (request()->isMethod('post')) {
-            $tradeExecute = $service->createFuturesOrder([
-                'symbol'      => 'BTCUSDT',
+            $leverage = '18';
+            $margin = '1';
+            $service->setLeverage([
+                'symbol' => 'RAVEUSDT',
                 'productType' => 'USDT-FUTURES',
-                'marginMode'  => 'isolated',
-                'side'        => 'buy',
-                'orderType'   => 'market',
-                'size'        => '0.01',
-                'marginCoin'  => 'USDT'
+                'leverage' => $leverage,
+                'marginCoin' => 'USDT',
             ]);
-            return response()->json($tradeExecute);
+            $price = (float)$service->getTickerFutures('RAVEUSDT')['data'][0]['markPrice'] ?? 0;
+
+            $size = number_format(($margin * $leverage) / $price, 4, '.', '');
+
+            $tradeExecute = $service->createFuturesOrder([
+                'symbol' => 'RAVEUSDT',
+                'productType' => 'USDT-FUTURES',
+                'marginMode' => 'isolated',
+                'side' => 'sell',
+                'orderType' => 'market',
+                'size' => $size,
+                'marginCoin' => 'USDT',
+            ]);
+
+            return response()->json([
+                'ticker' => $price,
+                'tradeExecute' => $tradeExecute,
+            ]);
         } else {
             return view('home');
         }

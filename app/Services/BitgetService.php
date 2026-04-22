@@ -34,6 +34,8 @@ class BitgetService
 
         [$timestamp, $sign] = $this->signature($method, $path, $query, $body);
 
+        $options = $method !== 'GET' && !empty($body) ? ['json' => $body] : [];
+
         return Http::withHeaders([
             'ACCESS-KEY'        => $this->apiKey,
             'ACCESS-SIGN'       => $sign,
@@ -41,9 +43,7 @@ class BitgetService
             'ACCESS-PASSPHRASE' => $this->passphrase,
             'locale'            => 'en-US',
             'Content-Type'      => 'application/json',
-        ])->send($method, $this->baseUrl . $path . ($query ? "?$query" : ''), [
-            'json' => $body
-        ])->json();
+        ])->send($method, $this->baseUrl . $path . ($query ? "?$query" : ''), $options)->json();
     }
 
     // Spot API
@@ -92,9 +92,29 @@ class BitgetService
     }
 
     // Futures API
+    public function getTickerFutures(string $symbol, string $productType = 'USDT-FUTURES')
+    {
+        return $this->request('GET', '/api/v2/mix/market/symbol-price', [
+            'productType' => $productType,
+            'symbol' => $symbol,
+        ]);
+    }
+
+    public function getContractInfo(string $symbol)
+    {
+        return $this->request('GET', '/api/v2/mix/market/contracts', [
+            'symbol' => $symbol,
+            'productType' => 'USDT-FUTURES'
+        ]);
+    }
+
+    public function setLeverage(array $params)
+    {
+        return $this->request('POST', '/api/v2/mix/account/set-leverage', $params);
+    }
+
     public function createFuturesOrder(array $params)
     {
-        // Required: symbol, productType, marginMode, side, orderType, size
         return $this->request('POST', '/api/v2/mix/order/place-order', $params);
     }
 
