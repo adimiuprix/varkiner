@@ -96,4 +96,13 @@ class TradeOrderController extends Controller
             return view('home');
         }
     }
+
+    public function stopOrder(BitgetService $service)
+    {
+        if (request()->isMethod('post')) {
+            $service->flashCloseOrder('RAVEUSDT', 'USDT-FUTURES');
+        } else {
+            return view('home');
+        }
+    }
 }
