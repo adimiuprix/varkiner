@@ -97,10 +97,13 @@ class TradeOrderController extends Controller
         }
     }
 
-    public function stopOrder(BitgetService $service)
+    public function stopOrder(BitgetService $service, $symbol = 'RAVEUSDT')
     {
         if (request()->isMethod('post')) {
-            $service->flashCloseOrder('RAVEUSDT', 'USDT-FUTURES');
+            $tradeExecute = $service->flashCloseOrder($symbol, 'USDT-FUTURES');
+            return response()->json([
+                'tradeExecute' => $tradeExecute,
+            ]);
         } else {
             return view('home');
         }

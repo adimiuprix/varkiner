@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <form action="{{ route('test-order') }}" method="post">
+    <form action="{{ route('stop-order') }}" method="post">
         @csrf
         <button type="submit">Test Order</button>
     </form>
