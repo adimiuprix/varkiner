@@ -30,6 +30,13 @@ class TradeOrderController extends Controller
             ]);
         }
 
+        // ubah signal type menjadi buy atau sell
+        $signalType = match ($request->type) {
+            'OB BULLISH' => 'buy',
+            'OB BEARISH' => 'sell',
+            default => null
+        };
+
         // Jika tipe berbeda dari history terakhir, tutup trade yang sedang open
         if ($lastHistory && $lastHistory->type !== $request->type) {
             Trade::where('symbol', $request->symbol)
@@ -38,7 +45,7 @@ class TradeOrderController extends Controller
         }
 
         // Buka trade baru
-        $tradeExecute = $this->futuresOrder($service);
+        $tradeExecute = $this->futuresOrder($service, $request->symbol, $signalType);
 
         Trade::create([
             'symbol' => $request->symbol,
@@ -63,38 +70,31 @@ class TradeOrderController extends Controller
         ], 201);
     }
 
-    public function futuresOrder(BitgetService $service)
+    public function futuresOrder(BitgetService $service, $symbol, $signalType)
     {
-        if (request()->isMethod('post')) {
-            $leverage = '18';
-            $margin = '1';
-            $service->setLeverage([
-                'symbol' => 'RAVEUSDT',
-                'productType' => 'USDT-FUTURES',
-                'leverage' => $leverage,
-                'marginCoin' => 'USDT',
-            ]);
-            $price = (float)$service->getTickerFutures('RAVEUSDT')['data'][0]['markPrice'] ?? 0;
+        $leverage = '15';
+        $margin = '1';
+        $service->setLeverage([
+            'symbol' => $symbol,
+            'productType' => 'USDT-FUTURES',
+            'leverage' => $leverage,
+            'marginCoin' => 'USDT',
+        ]);
+        $price = (float)$service->getTickerFutures('RAVEUSDT')['data'][0]['markPrice'] ?? 0;
 
-            $size = number_format(($margin * $leverage) / $price, 4, '.', '');
+        $size = number_format(($margin * $leverage) / $price, 4, '.', '');
 
-            $tradeExecute = $service->createFuturesOrder([
-                'symbol' => 'RAVEUSDT',
-                'productType' => 'USDT-FUTURES',
-                'marginMode' => 'isolated',
-                'side' => 'sell',
-                'orderType' => 'market',
-                'size' => $size,
-                'marginCoin' => 'USDT',
-            ]);
+        $tradeExecute = $service->createFuturesOrder([
+            'symbol' => $symbol,
+            'productType' => 'USDT-FUTURES',
+            'marginMode' => 'isolated',
+            'side' => $signalType,
+            'orderType' => 'market',
+            'size' => $size,
+            'marginCoin' => 'USDT',
+        ]);
 
-            return response()->json([
-                'ticker' => $price,
-                'tradeExecute' => $tradeExecute,
-            ]);
-        } else {
-            return view('home');
-        }
+        return response()->json($tradeExecute);
     }
 
     public function stopOrder(BitgetService $service, $symbol = 'RAVEUSDT')
