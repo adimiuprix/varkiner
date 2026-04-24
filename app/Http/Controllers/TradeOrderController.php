@@ -23,7 +23,7 @@ class TradeOrderController extends Controller
         // Ambil history terakhir untuk symbol ini
         $lastHistory = TradeHistory::where('symbol', $request->symbol)->latest()->first();
 
-        // Jika tipe sama dengan history terakhir, jangan eksekusi apa pun
+        // // Jika tipe sama dengan history terakhir, jangan eksekusi apa pun
         if ($lastHistory && $lastHistory->type === $request->type) {
             return response()->json([
                 'message' => 'Trade type is same as last history, nothing executed',
@@ -32,13 +32,14 @@ class TradeOrderController extends Controller
 
         // ubah signal type menjadi buy atau sell
         $signalType = match ($request->type) {
-            'OB BULLISH' => 'buy',
-            'OB BEARISH' => 'sell',
+            'BULLISH OB' => 'buy',
+            'BEARISH OB' => 'sell',
             default => null
         };
 
         // Jika tipe berbeda dari history terakhir, tutup trade yang sedang open
         if ($lastHistory && $lastHistory->type !== $request->type) {
+            $this->stopOrder($service, $request->symbol);
             Trade::where('symbol', $request->symbol)
                 ->where('status', 'open')
                 ->update(['status' => 'closed']);
@@ -47,12 +48,13 @@ class TradeOrderController extends Controller
         // Buka trade baru
         $tradeExecute = $this->futuresOrder($service, $request->symbol, $signalType);
 
+        // create trade
         Trade::create([
             'symbol' => $request->symbol,
             'type' => $request->type,
             'price' => $request->current_price,
             'status' => 'open',
-            'txid' => $tradeExecute['data']['successList']['clientOid'],
+            'txid' => $tradeExecute['data']['orderId'] ?? null,
         ]);
 
         // Simpan history baru
@@ -62,7 +64,7 @@ class TradeOrderController extends Controller
             'current_price' => $request->current_price,
             'zone_bottom' => $request->zone['bottom'],
             'zone_top' => $request->zone['top'],
-            'order_id' => $tradeExecute,
+            'order_id' => $tradeExecute['data']['orderId'] ?? null,
         ]);
 
         return response()->json([
@@ -80,7 +82,7 @@ class TradeOrderController extends Controller
             'leverage' => $leverage,
             'marginCoin' => 'USDT',
         ]);
-        $price = (float)$service->getTickerFutures('RAVEUSDT')['data'][0]['markPrice'] ?? 0;
+        $price = (float)$service->getTickerFutures($symbol)['data'][0]['markPrice'] ?? 0;
 
         $size = number_format(($margin * $leverage) / $price, 4, '.', '');
 
@@ -94,18 +96,14 @@ class TradeOrderController extends Controller
             'marginCoin' => 'USDT',
         ]);
 
-        return response()->json($tradeExecute);
+        return $tradeExecute;
     }
 
-    public function stopOrder(BitgetService $service, $symbol = 'RAVEUSDT')
+    public function stopOrder(BitgetService $service, $symbol)
     {
-        if (request()->isMethod('post')) {
-            $tradeExecute = $service->flashCloseOrder($symbol, 'USDT-FUTURES');
-            return response()->json([
-                'tradeExecute' => $tradeExecute,
-            ]);
-        } else {
-            return view('home');
-        }
+        $tradeExecute = $service->flashCloseOrder($symbol, 'USDT-FUTURES');
+        return response()->json([
+            'tradeExecute' => $tradeExecute,
+        ]);
     }
 }
