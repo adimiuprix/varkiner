@@ -6,7 +6,6 @@ use App\Models\Trade;
 use App\Models\TradeHistory;
 use App\Services\BitgetService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class TradeOrderController extends Controller
 {
@@ -47,7 +46,9 @@ class TradeOrderController extends Controller
         }
 
         // Buka trade baru
-        $tradeExecute = $this->futuresOrder($service, $request->symbol, $signalType);
+        if ($signalType == 'buy') {
+            $tradeExecute = $this->futuresOrder($service, $request->symbol, $signalType);
+        }
 
         Trade::create([
             'symbol' => $request->symbol,
