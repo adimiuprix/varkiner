@@ -90,7 +90,7 @@ class TradeOrderController extends Controller
         $tradeExecute = $service->createFuturesOrder([
             'symbol' => $symbol,
             'productType' => 'USDT-FUTURES',
-            'marginMode' => 'isolated',
+            'marginMode' => 'crossed',
             'side' => $signalType,
             'orderType' => 'market',
             'size' => $size,
