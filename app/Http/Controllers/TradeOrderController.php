@@ -95,7 +95,7 @@ class TradeOrderController extends Controller
         ], 201);
     }
 
-    public function futuresOrder(BitgetService $service, $symbol, $signalType)
+    public function futuresOrder(BitgetService $service, string $symbol, string $signalType)
     {
         $leverage = '15';
         $margin = '1';
@@ -122,7 +122,7 @@ class TradeOrderController extends Controller
         ]);
     }
 
-    public function stopOrder(BitgetService $service, $symbol)
+    public function stopOrder(BitgetService $service, string $symbol)
     {
         return $service->flashCloseOrder($symbol, 'USDT-FUTURES');
     }
