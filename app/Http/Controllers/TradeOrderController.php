@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trade;
-use App\Models\TradeHistory;
+use App\Models\SignalHistory;
 use App\Services\BitgetService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TradeOrderController extends Controller
 {
@@ -21,52 +22,80 @@ class TradeOrderController extends Controller
         ]);
 
         // Ambil history terakhir untuk symbol ini
-        $lastHistory = TradeHistory::where('symbol', $request->symbol)->latest()->first();
+        $lastHistory = SignalHistory::query()
+            ->where('symbol', $request->input('symbol'))
+            ->latest()
+            ->first();
 
-        // // Jika tipe sama dengan history terakhir, jangan eksekusi apa pun
-        if ($lastHistory && $lastHistory->type === $request->type) {
+        // Jika tipe sama dengan history terakhir, skip
+        if ($lastHistory && $lastHistory->type === $request->input('type')) {
             return response()->json([
                 'message' => 'Trade type is same as last history, nothing executed',
             ]);
         }
 
-        // ubah signal type menjadi buy atau sell
-        $signalType = match ($request->type) {
+        // Mapping signal
+        $signalType = match ($request->input('type')) {
             'BULLISH OB' => 'buy',
             'BEARISH OB' => 'sell',
             default => null
         };
 
-        // Jika tipe berbeda dari history terakhir, tutup trade yang sedang open
-        if ($lastHistory && $lastHistory->type !== $request->type) {
-            $this->stopOrder($service, $request->symbol);
-            Trade::where('symbol', $request->symbol)
-                ->where('status', 'open')
-                ->update(['status' => 'closed']);
+        $tradeExecute = null;
+
+        /**
+         * =========================
+         * 🔥 EXTERNAL API (OUTSIDE TRANSACTION)
+         * =========================
+         */
+
+        // Close order lama kalau beda type
+        if ($lastHistory && $lastHistory->type !== $request->input('type')) {
+            $this->stopOrder($service, $request->input('symbol'));
         }
 
-        // Buka trade baru
-        if ($signalType == 'buy') {
-            $tradeExecute = $this->futuresOrder($service, $request->symbol, $signalType);
+        // Open order baru
+        if ($signalType === 'buy') {
+            $tradeExecute = $this->futuresOrder($service, $request->input('symbol'), $signalType);
         }
 
-        Trade::create([
-            'symbol' => $request->symbol,
-            'type' => $request->type,
-            'price' => $request->current_price,
-            'status' => 'open',
-            'txid' => $tradeExecute['data']['orderId'] ?? null,
-        ]);
+        /**
+         * =========================
+         * 💾 DATABASE TRANSACTION
+         * =========================
+         */
+        DB::transaction(function () use ($lastHistory, $request, $tradeExecute, $signalType) {
 
-        // Simpan history baru
-        TradeHistory::create([
-            'symbol' => $request->symbol,
-            'type' => $request->type,
-            'current_price' => $request->current_price,
-            'zone_bottom' => $request->zone['bottom'],
-            'zone_top' => $request->zone['top'],
-            'order_id' => $tradeExecute['data']['orderId'] ?? null,
-        ]);
+            // Update trade lama jadi closed
+            if ($lastHistory && $lastHistory->type !== $request->input('type')) {
+                Trade::query()
+                    ->where('symbol', $request->input('symbol'))
+                    ->where('status', 'open')
+                    ->update(['status' => 'closed']);
+            }
+
+            // Insert trade baru HANYA jika buy (ada posisi dibuka di Bitget)
+            if ($signalType === 'buy') {
+                Trade::create([
+                    'symbol' => $request->input('symbol'),
+                    'type' => $request->input('type'),
+                    'price' => $request->input('current_price'),
+                    'status' => 'open',
+                    'txid' => $tradeExecute['data']['orderId'] ?? null,
+                ]);
+            }
+
+            // History selalu dicatat (diperlukan untuk deduplikasi sinyal)
+            SignalHistory::create([
+                'symbol' => $request->input('symbol'),
+                'type' => $request->input('type'),
+                'current_price' => $request->input('current_price'),
+                'zone_bottom' => $request->input('zone.bottom'),
+                'zone_top' => $request->input('zone.top'),
+                'order_id' => $tradeExecute['data']['orderId'] ?? null,
+            ]);
+
+        });
 
         return response()->json([
             'message' => 'Trade updated and new order opened successfully',
@@ -77,17 +106,19 @@ class TradeOrderController extends Controller
     {
         $leverage = '15';
         $margin = '1';
+
         $service->setLeverage([
             'symbol' => $symbol,
             'productType' => 'USDT-FUTURES',
             'leverage' => $leverage,
             'marginCoin' => 'USDT',
         ]);
-        $price = (float)$service->getTickerFutures($symbol)['data'][0]['markPrice'] ?? 0;
+
+        $price = (float)($service->getTickerFutures($symbol)['data'][0]['markPrice'] ?? 0);
 
         $size = number_format(($margin * $leverage) / $price, 4, '.', '');
 
-        $tradeExecute = $service->createFuturesOrder([
+        return $service->createFuturesOrder([
             'symbol' => $symbol,
             'productType' => 'USDT-FUTURES',
             'marginMode' => 'crossed',
@@ -96,15 +127,10 @@ class TradeOrderController extends Controller
             'size' => $size,
             'marginCoin' => 'USDT',
         ]);
-
-        return $tradeExecute;
     }
 
     public function stopOrder(BitgetService $service, $symbol)
     {
-        $tradeExecute = $service->flashCloseOrder($symbol, 'USDT-FUTURES');
-        return response()->json([
-            'tradeExecute' => $tradeExecute,
-        ]);
+        return $service->flashCloseOrder($symbol, 'USDT-FUTURES');
     }
 }
