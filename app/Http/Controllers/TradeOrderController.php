@@ -39,18 +39,9 @@ class TradeOrderController extends Controller
         // Cek apakah ada posisi yang masih open
         $isOpen = $lastTrade && $lastTrade->status === 'open';
 
-        // =========================
-        // 🛡️ LOGIKA DEDUPLIKASI
-        // =========================
-        if ($signalType === 'buy' && $isOpen) {
+        if (($signalType === $this->OrderSide()) === $isOpen) {
             return response()->json([
-                'message' => 'Long position is already open, nothing executed',
-            ]);
-        }
-
-        if ($signalType === 'sell' && !$isOpen) {
-            return response()->json([
-                'message' => 'No open position to close, nothing executed',
+                'message' => ($isOpen ? 'Long position is already open' : 'No open position to close') . ', nothing executed',
             ]);
         }
 
@@ -68,7 +59,7 @@ class TradeOrderController extends Controller
         }
 
         // Open order baru kalau buy
-        if ($signalType === 'buy') {
+        if ($signalType === $this->OrderSide()) {
             $tradeExecute = $this->futuresOrder($service, $request->input('symbol'), $signalType);
         }
 
@@ -134,5 +125,10 @@ class TradeOrderController extends Controller
     public function stopOrder(BitgetService $service, $symbol)
     {
         return $service->flashCloseOrder($symbol, 'USDT-FUTURES');
+    }
+
+    public function OrderSide()
+    {
+        return 'buy';
     }
 }
