@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trade;
-use App\Models\SignalHistory;
 use App\Services\BitgetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,25 +20,39 @@ class TradeOrderController extends Controller
             'zone.top' => 'required',
         ]);
 
-        // Ambil history terakhir untuk symbol ini
-        $lastHistory = SignalHistory::query()
-            ->where('symbol', $request->input('symbol'))
-            ->latest()
-            ->first();
-
-        // Jika tipe sama dengan history terakhir, skip
-        if ($lastHistory && $lastHistory->type === $request->input('type')) {
-            return response()->json([
-                'message' => 'Trade type is same as last history, nothing executed',
-            ]);
-        }
-
-        // Mapping signal
         $signalType = match ($request->input('type')) {
             'BULLISH OB' => 'buy',
             'BEARISH OB' => 'sell',
             default => null
         };
+
+        if (!$signalType) {
+            return response()->json(['message' => 'Invalid trade type'], 400);
+        }
+
+        // Ambil trade terakhir untuk symbol ini
+        $lastTrade = Trade::query()
+            ->where('symbol', $request->input('symbol'))
+            ->latest()
+            ->first();
+
+        // Cek apakah ada posisi yang masih open
+        $isOpen = $lastTrade && $lastTrade->status === 'open';
+
+        // =========================
+        // 🛡️ LOGIKA DEDUPLIKASI
+        // =========================
+        if ($signalType === 'buy' && $isOpen) {
+            return response()->json([
+                'message' => 'Long position is already open, nothing executed',
+            ]);
+        }
+
+        if ($signalType === 'sell' && !$isOpen) {
+            return response()->json([
+                'message' => 'No open position to close, nothing executed',
+            ]);
+        }
 
         $tradeExecute = null;
 
@@ -49,12 +62,12 @@ class TradeOrderController extends Controller
          * =========================
          */
 
-        // Close order lama kalau beda type
-        if ($lastHistory && $lastHistory->type !== $request->input('type')) {
+        // Close order lama kalau ada yang open dan sinyal sell
+        if ($signalType === 'sell' && $isOpen) {
             $this->stopOrder($service, $request->input('symbol'));
         }
 
-        // Open order baru
+        // Open order baru kalau buy
         if ($signalType === 'buy') {
             $tradeExecute = $this->futuresOrder($service, $request->input('symbol'), $signalType);
         }
@@ -64,36 +77,25 @@ class TradeOrderController extends Controller
          * 💾 DATABASE TRANSACTION
          * =========================
          */
-        DB::transaction(function () use ($lastHistory, $request, $tradeExecute, $signalType) {
+        DB::transaction(function () use ($lastTrade, $request, $tradeExecute, $signalType, $isOpen) {
 
-            // Update trade lama jadi closed
-            if ($lastHistory && $lastHistory->type !== $request->input('type')) {
-                Trade::query()
-                    ->where('symbol', $request->input('symbol'))
-                    ->where('status', 'open')
-                    ->update(['status' => 'closed']);
+            // Jika BEARISH (sell) dan ada posisi open, HANYA update status jadi closed
+            if ($signalType === 'sell' && $isOpen) {
+                $lastTrade->update(['status' => 'closed']);
             }
 
-            // Insert trade baru HANYA jika buy (ada posisi dibuka di Bitget)
+            // Jika BULLISH (buy), insert record BARU
             if ($signalType === 'buy') {
                 Trade::create([
                     'symbol' => $request->input('symbol'),
                     'type' => $request->input('type'),
                     'price' => $request->input('current_price'),
+                    'zone_bottom' => $request->input('zone.bottom'),
+                    'zone_top' => $request->input('zone.top'),
                     'status' => 'open',
                     'txid' => $tradeExecute['data']['orderId'] ?? null,
                 ]);
             }
-
-            // History selalu dicatat (diperlukan untuk deduplikasi sinyal)
-            SignalHistory::create([
-                'symbol' => $request->input('symbol'),
-                'type' => $request->input('type'),
-                'current_price' => $request->input('current_price'),
-                'zone_bottom' => $request->input('zone.bottom'),
-                'zone_top' => $request->input('zone.top'),
-                'order_id' => $tradeExecute['data']['orderId'] ?? null,
-            ]);
 
         });
 
