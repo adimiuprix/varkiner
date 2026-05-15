@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('trade_pairs', function (Blueprint $table) {
             $table->id();
-            $table->string('symbol');
+            $table->string('pair');
             $table->enum('side', ['buy', 'sell'])->nullable();
             $table->timestamps();
         });

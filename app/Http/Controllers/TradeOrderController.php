@@ -130,7 +130,7 @@ class TradeOrderController extends Controller
     private function reverseSide(string $symbol): string
     {
         $side = DB::table('trade_pairs')
-            ->where('symbol', $symbol)
+            ->where('pair', $symbol)
             ->value('side');
 
         return $side === 'buy' ? 'sell' : 'buy';
@@ -139,7 +139,7 @@ class TradeOrderController extends Controller
     private function orderSide(string $symbol): string
     {
         return DB::table('trade_pairs')
-            ->where('symbol', $symbol)
+            ->where('pair', $symbol)
             ->value('side');
     }
 }
