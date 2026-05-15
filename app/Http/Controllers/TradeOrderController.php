@@ -39,7 +39,7 @@ class TradeOrderController extends Controller
         // Cek apakah ada posisi yang masih open
         $isOpen = $lastTrade && $lastTrade->status === 'open';
 
-        if (($signalType === 'buy') === $isOpen) {
+        if (($signalType === $this->orderSide($request->input('type'))) === $isOpen) {
             return response()->json([
                 'message' => ($isOpen ? 'Long position is already open' : 'No open position to close') . ', nothing executed',
             ]);
@@ -54,12 +54,12 @@ class TradeOrderController extends Controller
          */
 
         // Close order lama kalau ada yang open dan sinyal sell
-        if ($signalType === 'sell' && $isOpen) {
+        if ($signalType === $this->reverseSide($request->input('symbol')) && $isOpen) {
             $this->stopOrder($service, $request->input('symbol'));
         }
 
         // Open order baru kalau buy
-        if ($signalType === 'buy') {
+        if ($signalType === $this->orderSide($request->input('symbol'))) {
             $tradeExecute = $this->futuresOrder($service, $request->input('symbol'), $signalType);
         }
 
@@ -71,12 +71,12 @@ class TradeOrderController extends Controller
         DB::transaction(function () use ($lastTrade, $request, $tradeExecute, $signalType, $isOpen) {
 
             // Jika BEARISH (sell) dan ada posisi open, HANYA update status jadi closed
-            if ($signalType === 'sell' && $isOpen) {
+            if ($signalType === $this->reverseSide($request->input('symbol')) && $isOpen) {
                 $lastTrade->update(['status' => 'closed']);
             }
 
             // Jika BULLISH (buy), insert record BARU
-            if ($signalType === 'buy') {
+            if ($signalType === $this->orderSide($request->input('symbol'))) {
                 Trade::create([
                     'symbol' => $request->input('symbol'),
                     'type' => $request->input('type'),
@@ -125,5 +125,21 @@ class TradeOrderController extends Controller
     public function stopOrder(BitgetService $service, string $symbol)
     {
         return $service->flashCloseOrder($symbol, 'USDT-FUTURES');
+    }
+
+    private function reverseSide(string $symbol): string
+    {
+        $side = DB::table('trade_pairs')
+            ->where('symbol', $symbol)
+            ->value('side');
+
+        return $side === 'buy' ? 'sell' : 'buy';
+    }
+
+    private function orderSide(string $symbol): string
+    {
+        return DB::table('trade_pairs')
+            ->where('symbol', $symbol)
+            ->value('side');
     }
 }
