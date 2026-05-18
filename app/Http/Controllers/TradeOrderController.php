@@ -39,7 +39,11 @@ class TradeOrderController extends Controller
         // Cek apakah ada posisi yang masih open
         $isOpen = $lastTrade && $lastTrade->status === 'open';
 
-        if (($signalType === $this->orderSide($request->input('type'))) === $isOpen) {
+        // Get order side from database
+        $orderSide = $this->orderSide($request->input('symbol'));
+        $reverseSide = $this->reverseSide($request->input('symbol'));
+
+        if (($signalType === $orderSide) === $isOpen) {
             return response()->json([
                 'message' => ($isOpen ? 'Long position is already open' : 'No open position to close') . ', nothing executed',
             ]);
@@ -54,12 +58,12 @@ class TradeOrderController extends Controller
          */
 
         // Close order lama kalau ada yang open dan sinyal sell
-        if ($signalType === $this->reverseSide($request->input('symbol')) && $isOpen) {
+        if ($signalType === $reverseSide && $isOpen) {
             $this->stopOrder($service, $request->input('symbol'));
         }
 
         // Open order baru kalau buy
-        if ($signalType === $this->orderSide($request->input('symbol'))) {
+        if ($signalType === $orderSide) {
             $tradeExecute = $this->futuresOrder($service, $request->input('symbol'), $signalType);
         }
 
@@ -68,15 +72,15 @@ class TradeOrderController extends Controller
          * 💾 DATABASE TRANSACTION
          * =========================
          */
-        DB::transaction(function () use ($lastTrade, $request, $tradeExecute, $signalType, $isOpen) {
+        DB::transaction(function () use ($lastTrade, $request, $tradeExecute, $signalType, $isOpen, $orderSide, $reverseSide) {
 
             // Jika BEARISH (sell) dan ada posisi open, HANYA update status jadi closed
-            if ($signalType === $this->reverseSide($request->input('symbol')) && $isOpen) {
+            if ($signalType === $reverseSide && $isOpen) {
                 $lastTrade->update(['status' => 'closed']);
             }
 
             // Jika BULLISH (buy), insert record BARU
-            if ($signalType === $this->orderSide($request->input('symbol'))) {
+            if ($signalType === $orderSide) {
                 Trade::create([
                     'symbol' => $request->input('symbol'),
                     'type' => $request->input('type'),
@@ -127,18 +131,18 @@ class TradeOrderController extends Controller
         return $service->flashCloseOrder($symbol, 'USDT-FUTURES');
     }
 
-    private function reverseSide(string $symbol): string
+    private function reverseSide(string $symbol): ?string
     {
-        $side = DB::table('trade_pairs')
+        $side = (string) DB::table('trade_pairs')
             ->where('pair', $symbol)
             ->value('side');
 
         return $side === 'buy' ? 'sell' : 'buy';
     }
 
-    private function orderSide(string $symbol): string
+    private function orderSide(string $symbol): ?string
     {
-        return DB::table('trade_pairs')
+        return (string) DB::table('trade_pairs')
             ->where('pair', $symbol)
             ->value('side');
     }
