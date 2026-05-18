@@ -8,8 +8,9 @@
 </head>
 
 <body>
-    <form action="{{ route('stop-order') }}" method="post">
+    <form action="{{ route('editpair') }}" method="post">
         @csrf
+        <input type="text" name="pair" placeholder="pair">
         <button type="submit">Test Order</button>
     </form>
 </body>

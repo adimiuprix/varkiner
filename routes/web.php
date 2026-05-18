@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TradeOrderController;
+use App\Http\Controllers\PairController;
 
-Route::match(['post', 'get'], '/stop-order', [TradeOrderController::class, 'stopOrder'])->name('stop-order');
+Route::get('/', [PairController::class, 'index'])->name('pairform');
+
+Route::post('/edit-pair', [PairController::class, 'editPair'])->name('editpair');
