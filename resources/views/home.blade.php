@@ -10,8 +10,13 @@
 <body>
     <form action="{{ route('editpair') }}" method="post">
         @csrf
-        <input type="text" name="pair" placeholder="pair">
-        <button type="submit">Test Order</button>
+        <input type="text" name="pair" value="{{ $pair->pair }}" placeholder="pair">
+
+        <select name="side">
+            <option value="buy" {{ $pair->side == 'buy' ? 'selected' : '' }}>BUY</option>
+            <option value="sell" {{ $pair->side == 'sell' ? 'selected' : '' }}>SELL</option>
+        </select>
+        <button type="submit">Order</button>
     </form>
 </body>
 

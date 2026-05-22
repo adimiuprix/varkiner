@@ -10,22 +10,22 @@ class PairController extends Controller
 {
     public function index()
     {
-        return view('home');
+        $pair = TradePair::where('id', 1)->first();
+        return view('home', compact('pair'));
     }
 
     public function editPair(Request $request, Pm2Service $pm2)
     {
         $pair = $request->input('pair');
-
-        // jadikan uppercase
-        $pair = strtoupper($pair);
+        $side = $request->input('side');
 
         $trade = TradePair::where('id', 1)->update([
-            'pair' => $pair
+            'pair' => strtoupper($pair),
+            'side' => $side
         ]);
 
         $pm2->restart('bot');
 
-        return $trade;
+        return redirect()->back();
     }
 }
