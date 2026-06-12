@@ -16,7 +16,6 @@ class PairController extends Controller
 
     public function editPair(EditPairRequest $request, Pm2Service $pm2)
     {
-        dd($request);
         TradePair::updateOrCreate(
             ['id' => 1],
             [
@@ -29,6 +28,6 @@ class PairController extends Controller
 
         $pm2->restart('bot');
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Configuration saved and bot restarted.');
     }
 }
