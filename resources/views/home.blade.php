@@ -23,7 +23,7 @@
                 <span class="text-xs font-medium text-emerald-400 uppercase tracking-widest">Bot Active</span>
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-zinc-50">Varkiner</h1>
-            <p class="text-sm text-zinc-500">Bitget USDT-Futures · 15× Leverage</p>
+            <p class="text-sm text-zinc-500">Bitget USDT-Futures · {{ $user->lavarage ?? 15 }}× Leverage</p>
         </div>
 
         {{-- Card --}}
@@ -105,6 +105,49 @@
                             ↓ Sell / Short
                         </option>
                     </select>
+                </div>
+
+                {{-- Leverage & Margin --}}
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                        <label for="lavarage" class="block text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            Leverage
+                        </label>
+                        <div class="relative">
+                            <input
+                                id="lavarage"
+                                type="number"
+                                name="lavarage"
+                                value="{{ $user->lavarage ?? 15 }}"
+                                min="1"
+                                max="125"
+                                class="w-full rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder-zinc-600
+                                       font-mono text-sm px-4 py-2.5 pr-8
+                                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                                       transition"
+                            />
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 pointer-events-none">×</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="margin" class="block text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            Margin (USDT)
+                        </label>
+                        <div class="relative">
+                            <input
+                                id="margin"
+                                type="number"
+                                name="margin"
+                                value="{{ $user->margin ?? 1 }}"
+                                min="1"
+                                class="w-full rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder-zinc-600
+                                       font-mono text-sm px-4 py-2.5 pr-10
+                                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                                       transition"
+                            />
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 pointer-events-none">$</span>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Submit --}}
