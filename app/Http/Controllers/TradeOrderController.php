@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trade;
+use App\Models\User;
 use App\Services\BitgetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -101,8 +102,9 @@ class TradeOrderController extends Controller
 
     public function futuresOrder(BitgetService $service, string $symbol, string $signalType)
     {
-        $leverage = '15';
-        $margin = '1';
+        $user = User::first();
+        $leverage = (string) $user->lavarage;
+        $margin = (string) $user->margin;
 
         $service->setLeverage([
             'symbol' => $symbol,
