@@ -13,9 +13,9 @@ class BitgetService
 
     public function __construct()
     {
-        $this->apiKey = "bg_523cc6034001f552e851cfb7986a0937";
-        $this->secretKey = "e25da0e7123f6430a4402e43bd541b26674e3f951a4053707dee85305279acbe";
-        $this->passphrase = "MakanBiawak";
+        $this->apiKey = config('services.bitget.api_key');
+        $this->secretKey = config('services.bitget.secret_key');
+        $this->passphrase = config('services.bitget.passphrase');
     }
 
     protected function signature(string $method, string $path, string $query = '', array $body = []): array

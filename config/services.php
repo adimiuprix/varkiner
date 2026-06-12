@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'bitget' => [
+        'api_key'    => env('BITGET_API_KEY'),
+        'secret_key' => env('BITGET_SECRET_KEY'),
+        'passphrase' => env('BITGET_PASSPHRASE'),
+    ],
+
 ];
