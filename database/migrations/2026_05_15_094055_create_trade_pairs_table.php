@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('pair');
             $table->enum('side', ['buy', 'sell'])->nullable();
+            $table->integer('lavarage')->nullable();
+            $table->integer('margin')->nullable();
             $table->timestamps();
         });
     }

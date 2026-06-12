@@ -23,7 +23,7 @@
                 <span class="text-xs font-medium text-emerald-400 uppercase tracking-widest">Bot Active</span>
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-zinc-50">Varkiner</h1>
-            <p class="text-sm text-zinc-500">Bitget USDT-Futures · {{ $user->lavarage ?? 15 }}× Leverage</p>
+            <p class="text-sm text-zinc-500">Bitget USDT-Futures · {{ $pair->lavarage ?? 15 }}× Leverage</p>
         </div>
 
         {{-- Card --}}
@@ -118,7 +118,7 @@
                                 id="lavarage"
                                 type="number"
                                 name="lavarage"
-                                value="{{ $user->lavarage ?? 15 }}"
+                                value="{{ $pair->lavarage ?? 15 }}"
                                 min="1"
                                 max="125"
                                 class="w-full rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder-zinc-600
@@ -138,7 +138,7 @@
                                 id="margin"
                                 type="number"
                                 name="margin"
-                                value="{{ $user->margin ?? 1 }}"
+                                value="{{ $pair->margin ?? 1 }}"
                                 min="1"
                                 class="w-full rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder-zinc-600
                                        font-mono text-sm px-4 py-2.5 pr-10
