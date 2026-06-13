@@ -30,4 +30,23 @@ class PairController extends Controller
 
         return redirect()->back()->with('success', 'Configuration saved and bot restarted.');
     }
+
+    public function pm2Start(Pm2Service $pm2)
+    {
+        $pm2->start('bot');
+        return redirect()->route('pairform')->with('pm2_status', 'Bot started successfully.');
+    }
+
+    public function pm2Stop(Pm2Service $pm2)
+    {
+        $pm2->stop('bot');
+        return redirect()->route('pairform')->with('pm2_status', 'Bot stopped.');
+    }
+
+    public function pm2Restart(Pm2Service $pm2)
+    {
+        $pm2->restart('bot');
+        return redirect()->route('pairform')->with('pm2_status', 'Bot restarted.');
+    }
+
 }

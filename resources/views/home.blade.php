@@ -50,29 +50,6 @@
             <form action="{{ route('editpair') }}" method="post" class="px-5 py-5 space-y-4">
                 @csrf
 
-                {{-- Flash messages --}}
-                @if(session('success'))
-                <div class="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-sm text-emerald-400">
-                    <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                    </svg>
-                    {{ session('success') }}
-                </div>
-                @endif
-
-                @if($errors->any())
-                <div class="rounded-lg bg-rose-500/10 border border-rose-500/20 px-4 py-3 space-y-1">
-                    @foreach($errors->all() as $error)
-                    <p class="flex items-start gap-2 text-sm text-rose-400">
-                        <svg class="w-4 h-4 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                        </svg>
-                        {{ $error }}
-                    </p>
-                    @endforeach
-                </div>
-                @endif
-
                 {{-- Current pair badge --}}
                 @if($pair)
                 <div class="flex items-center justify-between rounded-lg bg-zinc-800/60 border border-zinc-700/50 px-4 py-3">
@@ -189,6 +166,95 @@
                 </button>
 
             </form>
+        </div>
+
+        {{-- PM2 Control --}}
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl shadow-black/40 overflow-hidden">
+
+            {{-- Card header --}}
+            <div class="px-5 py-4 border-b border-zinc-800 flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-zinc-800">
+                    <svg class="w-4 h-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-zinc-100">PM2 Control</p>
+                    <p class="text-xs text-zinc-500">Manage the <span class="font-mono">bot</span> process</p>
+                </div>
+            </div>
+
+            <div class="px-5 py-5 space-y-3">
+
+                {{-- Flash message --}}
+                @if(session('pm2_status'))
+                <div class="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5">
+                    <svg class="w-4 h-4 shrink-0 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                    <span class="text-xs text-emerald-300">{{ session('pm2_status') }}</span>
+                </div>
+                @endif
+
+                {{-- Buttons --}}
+                <div class="grid grid-cols-3 gap-3">
+
+                    {{-- Start --}}
+                    <form action="{{ route('pm2.start') }}" method="post">
+                        @csrf
+                        <button type="submit"
+                            class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700
+                                   text-white text-sm font-semibold py-2.5 px-3
+                                   transition focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-zinc-900
+                                   flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                            </svg>
+                            Start
+                        </button>
+                    </form>
+
+                    {{-- Restart --}}
+                    <form action="{{ route('pm2.restart') }}" method="post">
+                        @csrf
+                        <button type="submit"
+                            class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+                                   text-white text-sm font-semibold py-2.5 px-3
+                                   transition focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-zinc-900
+                                   flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                            Restart
+                        </button>
+                    </form>
+
+                    {{-- Stop --}}
+                    <form action="{{ route('pm2.stop') }}" method="post">
+                        @csrf
+                        <button type="submit"
+                            class="w-full rounded-lg bg-rose-600/80 hover:bg-rose-500 active:bg-rose-700
+                                   text-white text-sm font-semibold py-2.5 px-3
+                                   transition focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 focus:ring-offset-zinc-900
+                                   flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
+                            </svg>
+                            Stop
+                        </button>
+                    </form>
+
+                </div>
+            </div>
         </div>
 
         {{-- Footer --}}
